@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizForge — Online Exam Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --radius: 12px;
+    --glow: 0 0 30px rgba(108,99,255,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(108,99,255,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(67,233,123,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ──────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px;
+    height: 60px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.3rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    cursor: pointer;
+  }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .nav-btn {
+    padding: 6px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; transition: all .2s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #user-info { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent3); }
+
+  /* ── PAGES ────────────────────────────── */
+  .page { display: none; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  /* ── AUTH PAGE ────────────────────────── */
+  #page-auth {
+    min-height: calc(100vh - 60px);
+    display: none; align-items: center; justify-content: center;
+    padding: 40px 20px;
+  }
+  #page-auth.active { display: flex; }
+  .auth-card {
+    width: 100%; max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: var(--glow);
+  }
+  .auth-card h2 {
+    font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .auth-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 28px; background: var(--surface2); border-radius: 10px; padding: 4px; }
+  .tab-btn {
+    flex: 1; padding: 8px; border-radius: 8px; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: 0.9rem; transition: all .2s;
+  }
+  .tab-btn.active { background: var(--accent); color: #fff; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+  .form-group input {
+    width: 100%; padding: 11px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 0.95rem; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color .2s;
+  }
+  .form-group input:focus { border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; padding: 12px; background: var(--accent); border: none;
+    border-radius: 10px; color: #fff; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 1rem; cursor: pointer; transition: all .2s;
+    margin-top: 8px;
+  }
+  .btn-primary:hover { background: #7c75ff; transform: translateY(-1px); box-shadow: 0 8px 25px rgba(108,99,255,0.35); }
+  .demo-creds {
+    margin-top: 20px; padding: 14px; background: var(--surface2);
+    border-radius: 10px; border: 1px solid var(--border);
+  }
+  .demo-creds p { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+  .demo-creds code { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--accent3); }
+  .error-msg { color: var(--accent2); font-size: 0.85rem; margin-top: 10px; text-align: center; }
+
+  /* ── DASHBOARD ────────────────────────── */
+  #page-dashboard { padding: 40px 32px; max-width: 1200px; margin: 0 auto; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .section-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.5rem; }
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-family: 'DM Mono', monospace; }
+  .badge-easy { background: rgba(67,233,123,0.15); color: var(--accent3); border: 1px solid rgba(67,233,123,0.3); }
+  .badge-medium { background: rgba(255,165,0,0.15); color: #ffb347; border: 1px solid rgba(255,165,0,0.3); }
+  .badge-hard { background: rgba(255,101,132,0.15); color: var(--accent2); border: 1px solid rgba(255,101,132,0.3); }
+  .quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .quiz-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; cursor: pointer;
+    transition: all .25s; position: relative; overflow: hidden;
+  }
+  .quiz-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transform: scaleX(0); transition: transform .3s;
+  }
+  .quiz-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--glow); }
+  .quiz-card:hover::before { transform: scaleX(1); }
+  .quiz-card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; }
+  .quiz-card-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+  .quiz-card-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .meta-item { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+
+  /* ── EXAM PAGE ────────────────────────── */
+  #page-exam { padding: 32px; max-width: 800px; margin: 0 auto; }
+  .exam-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 28px;
+  }
+  .exam-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.2rem; }
+  .timer {
+    font-family: 'DM Mono', monospace; font-size: 1.4rem; font-weight: 500;
+    color: var(--accent3); padding: 8px 16px; background: rgba(67,233,123,0.1);
+    border-radius: 8px; border: 1px solid rgba(67,233,123,0.2);
+  }
+  .timer.warning { color: var(--accent2); background: rgba(255,101,132,0.1); border-color: rgba(255,101,132,0.2); }
+  .progress-bar {
+    height: 4px; background: var(--surface2); border-radius: 2px;
+    margin-bottom: 28px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 2px; transition: width .3s;
+  }
+  .question-nav {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px;
+  }
+  .q-nav-btn {
+    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem; transition: all .2s;
+  }
+  .q-nav-btn.answered { background: rgba(108,99,255,0.2); border-color: var(--accent); color: var(--accent); }
+  .q-nav-btn.current { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .question-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
+  }
+  .q-number { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .q-text { font-size: 1.05rem; line-height: 1.6; margin-bottom: 24px; font-weight: 500; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option-btn {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px;
+    cursor: pointer; transition: all .2s; text-align: left;
+  }
+  .option-btn:hover { border-color: var(--accent); background: rgba(108,99,255,0.08); }
+  .option-btn.selected { background: rgba(108,99,255,0.18); border-color: var(--accent); }
+  .option-label {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--surface);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; flex-shrink: 0;
+    transition: all .2s;
+  }
+  .option-btn.selected .option-label { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .option-text { font-size: 0.95rem; }
+  .exam-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .btn-nav {
+    padding: 10px 22px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all .2s;
+  }
+  .btn-nav:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-submit {
+    padding: 10px 28px; border-radius: 10px; border: none;
+    background: var(--accent3); color: #0a0a0f; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; transition: all .2s;
+  }
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(67,233,123,0.35); }
+
+  /* ── RESULT PAGE ──────────────────────── */
+  #page-result { padding: 40px 32px; max-width: 800px; margin: 0 auto; }
+  .result-hero {
+    text-align: center; padding: 48px 32px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; margin-bottom: 32px;
+  }
+  .grade-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 90px; height: 90px; border-radius: 50%;
+    font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800;
+    margin-bottom: 16px;
+  }
+  .grade-A { background: rgba(67,233,123,0.15); color: var(--accent3); border: 2px solid rgba(67,233,123,0.4); }
+  .grade-B { background: rgba(108,99,255,0.15); color: var(--accent); border: 2px solid rgba(108,99,255,0.4); }
+  .grade-C, .grade-D { background: rgba(255,165,0,0.15); color: #ffb347; border: 2px solid rgba(255,165,0,0.3); }
+  .grade-F { background: rgba(255,101,132,0.15); color: var(--accent2); border: 2px solid rgba(255,101,132,0.3); }
+  .result-score { font-family: 'Syne', sans-serif; font-size: 2.8rem; font-weight: 800; }
+  .result-label { color: var(--muted); margin-top: 6px; font-size: 0.95rem; }
+  .stat-row { display: flex; justify-content: center; gap: 32px; margin-top: 24px; }
+  .stat-item { text-align: center; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 500; color: var(--accent); }
+  .stat-name { font-size: 0.75rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .breakdown-list { display: flex; flex-direction: column; gap: 12px; }
+  .breakdown-item {
+    padding: 16px 20px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); border-left: 3px solid var(--border);
+  }
+  .breakdown-item.correct { border-left-color: var(--accent3); }
+  .breakdown-item.wrong { border-left-color: var(--accent2); }
+  .breakdown-item.skipped { border-left-color: var(--muted); }
+  .bi-q { font-size: 0.92rem; line-height: 1.5; margin-bottom: 10px; }
+  .bi-answers { display: flex; gap: 12px; font-family: 'DM Mono', monospace; font-size: 0.78rem; }
+  .ans-tag { padding: 3px 10px; border-radius: 6px; }
+  .ans-correct { background: rgba(67,233,123,0.15); color: var(--accent3); }
+  .ans-selected { background: rgba(255,101,132,0.15); color: var(--accent2); }
+  .ans-selected.match { background: rgba(67,233,123,0.15); color: var(--accent3); }
+
+  /* ── LEADERBOARD ──────────────────────── */
+  #page-leaderboard { padding: 40px 32px; max-width: 900px; margin: 0 auto; }
+  .lb-table { width: 100%; border-collapse: collapse; }
+  .lb-table th {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); padding: 12px 16px;
+    text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .lb-table td { padding: 14px 16px; border-bottom: 1px solid rgba(42,42,58,0.5); font-size: 0.9rem; }
+  .lb-table tr:hover td { background: var(--surface2); }
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500;
+  }
+  .rank-1 { background: rgba(255,215,0,0.2); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+  .rank-2 { background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3); }
+  .rank-3 { background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3); }
+  .rank-other { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .pct-bar { display: flex; align-items: center; gap: 10px; }
+  .pct-fill { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent3)); min-width: 2px; }
+
+  /* ── HISTORY ──────────────────────────── */
+  #page-history { padding: 40px 32px; max-width: 900px; margin: 0 auto; }
+  .history-grid { display: grid; gap: 12px; }
+  .history-card {
+    display: flex; align-items: center; gap: 20px;
+    padding: 18px 24px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    transition: border-color .2s;
+  }
+  .history-card:hover { border-color: var(--border); }
+  .h-score-badge {
+    width: 50px; height: 50px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem;
+  }
+  .h-info { flex: 1; }
+  .h-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+  .h-meta { font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .h-pct { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; }
+
+  /* ── LOADING ──────────────────────────── */
+  .loading { text-align: center; padding: 60px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .spinner { display: inline-block; width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── MODAL CONFIRM ────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px; max-width: 420px; width: 90%; text-align: center; }
+  .modal h3 { font-family: 'Syne', sans-serif; font-size: 1.3rem; margin-bottom: 10px; }
+  .modal p { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .modal-actions { display: flex; gap: 12px; justify-content: center; }
+  .btn-cancel { padding: 10px 24px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .btn-confirm { padding: 10px 24px; border-radius: 10px; border: none; background: var(--accent2); color: #fff; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; }
+
+  .empty-state { text-align: center; padding: 60px; color: var(--muted); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.95rem; }
+
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    #page-dashboard, #page-exam, #page-result, #page-leaderboard, #page-history { padding: 20px 16px; }
+    .stat-row { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('dashboard')">QuizForge</div>
+  <div class="nav-right">
+    <span id="user-info"></span>
+    <button class="nav-btn" id="btn-nav-dash" onclick="showPage('dashboard')">Quizzes</button>
+    <button class="nav-btn" id="btn-nav-lb" onclick="showPage('leaderboard')">Leaderboard</button>
+    <button class="nav-btn" id="btn-nav-hist" onclick="showPage('history')">History</button>
+    <button class="nav-btn" id="btn-auth" onclick="handleAuthBtn()">Login</button>
+  </div>
+</nav>
+
+<!-- AUTH PAGE -->
+<div id="page-auth" class="page">
+  <div class="auth-card">
+    <h2>Welcome back</h2>
+    <p>Sign in or create an account to start competing.</p>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Register</button>
+    </div>
+    <div id="form-login">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="your username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+      <div id="login-error" class="error-msg"></div>
+      <div class="demo-creds">
+        <p>Demo accounts</p>
+        <code>admin / admin123 &nbsp;|&nbsp; alice / alice123</code><br>
+        <code>bob / bob123 &nbsp;|&nbsp; rohan / rohan123</code>
+      </div>
+    </div>
+    <div id="form-register" style="display:none">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="choose a username">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="min 6 characters">
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+      <div id="reg-error" class="error-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div id="page-dashboard" class="page">
+  <div style="padding:40px 32px; max-width:1200px; margin:0 auto;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Available Quizzes</div>
+        <p style="color:var(--muted);font-size:0.9rem;margin-top:4px">Pick a quiz. Beat the clock. Top the leaderboard.</p>
+      </div>
+    </div>
+    <div id="quiz-grid" class="quiz-grid">
+      <div class="loading"><div class="spinner"></div><br>Loading quizzes...</div>
+    </div>
+  </div>
+</div>
+
+<!-- EXAM PAGE -->
+<div id="page-exam" class="page">
+  <div class="exam-header">
+    <div>
+      <div id="exam-title" class="exam-title">Quiz</div>
+      <div id="exam-progress-text" style="font-size:0.8rem;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace"></div>
+    </div>
+    <div id="timer" class="timer">00:00</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <div id="question-nav" class="question-nav"></div>
+  <div id="question-area"></div>
+  <div class="exam-footer">
+    <button class="btn-nav" onclick="navQuestion(-1)">← Prev</button>
+    <button class="btn-nav" onclick="navQuestion(1)">Next →</button>
+    <button class="btn-submit" onclick="confirmSubmit()">Submit Quiz ✓</button>
+  </div>
+</div>
+
+<!-- RESULT PAGE -->
+<div id="page-result" class="page">
+  <div id="result-content"></div>
+</div>
+
+<!-- LEADERBOARD PAGE -->
+<div id="page-leaderboard" class="page">
+  <div style="margin-bottom:24px">
+    <div class="section-title">🏆 Global Leaderboard</div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:4px">Ranked by score percentage, then fastest time.</p>
+  </div>
+  <div id="leaderboard-content"></div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="page-history" class="page">
+  <div style="margin-bottom:24px">
+    <div class="section-title">📜 My Result History</div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:4px">All your past attempts.</p>
+  </div>
+  <div id="history-content"></div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Submit Quiz?</h3>
+    <p id="modal-msg">You have unanswered questions. Are you sure you want to submit?</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Go Back</button>
+      <button class="btn-confirm" onclick="submitQuiz()">Submit Now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let token = null;
+let currentUser = null;
+
+// Exam state
+let examState = {
+  quizId: null,
+  questions: [],
+  answers: {},      // { questionId: 'A'/'B'/'C'/'D' }
+  currentIndex: 0,
+  totalSeconds: 0,
+  timerInterval: null,
+  startTime: null
+};
+
+// ── INIT ────────────────────────────────────────────────────────────────
+
+window.onload = () => {
+  token = localStorage.getItem('qf_token');
+  currentUser = JSON.parse(localStorage.getItem('qf_user') || 'null');
+  if (token && currentUser) {
+    updateNavAuth();
+    loadQuizzes();
+    showPage('dashboard');
+  } else {
+    showPage('auth');
+  }
+};
+
+function updateNavAuth() {
+  const userInfo = document.getElementById('user-info');
+  const btnAuth = document.getElementById('btn-auth');
+  if (currentUser) {
+    userInfo.textContent = `@${currentUser.username}`;
+    btnAuth.textContent = 'Logout';
+  } else {
+    userInfo.textContent = '';
+    btnAuth.textContent = 'Login';
+  }
+}
+
+function handleAuthBtn() {
+  if (token) { logout(); } else { showPage('auth'); }
+}
+
+function logout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('qf_token');
+  localStorage.removeItem('qf_user');
+  updateNavAuth();
+  showPage('auth');
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'leaderboard') loadLeaderboard();
+  if (name === 'history') loadHistory();
+}
+
+// ── AUTH ────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  document.getElementById('login-error').textContent = '';
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('login-error').textContent = data.error || 'Login failed'; return; }
+    token = data.token;
+    currentUser = { username: data.username, email: data.email, role: data.role };
+    localStorage.setItem('qf_token', token);
+    localStorage.setItem('qf_user', JSON.stringify(currentUser));
+    updateNavAuth();
+    loadQuizzes();
+    showPage('dashboard');
+  } catch(e) {
+    document.getElementById('login-error').textContent = 'Cannot connect to server. Is Spring Boot running?';
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  document.getElementById('reg-error').textContent = '';
+  if (!username || !email || !password) { document.getElementById('reg-error').textContent = 'All fields required'; return; }
+  try {
+    const res = await fetch(`${API}/auth/register`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('reg-error').textContent = data.error || 'Registration failed'; return; }
+    token = data.token;
+    currentUser = { username: data.username, email: data.email, role: data.role };
+    localStorage.setItem('qf_token', token);
+    localStorage.setItem('qf_user', JSON.stringify(currentUser));
+    updateNavAuth();
+    loadQuizzes();
+    showPage('dashboard');
+  } catch(e) {
+    document.getElementById('reg-error').textContent = 'Cannot connect to server.';
+  }
+}
+
+// ── QUIZZES ─────────────────────────────────────────────────────────────
+
+async function loadQuizzes() {
+  const grid = document.getElementById('quiz-grid');
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading...</div>';
+  try {
+    const res = await authFetch('/quiz');
+    const quizzes = await res.json();
+    if (!quizzes.length) { grid.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No quizzes available yet.</p></div>'; return; }
+    grid.innerHTML = quizzes.map(q => `
+      <div class="quiz-card" onclick="startQuiz(${q.id})">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <span class="badge badge-${q.difficulty.toLowerCase()}">${q.difficulty}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted)">${q.category}</span>
+        </div>
+        <div class="quiz-card-title">${q.title}</div>
+        <div class="quiz-card-desc">${q.description}</div>
+        <div class="quiz-card-meta">
+          <span class="meta-item">⏱ ${q.timeLimitMinutes} min</span>
+          <span class="meta-item">📝 ${q.questions ? q.questions.length : '—'} questions</span>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load quizzes. Is the server running?</p></div>';
+  }
+}
+
+// ── EXAM ────────────────────────────────────────────────────────────────
+
+async function startQuiz(quizId) {
+  if (!token) { showPage('auth'); return; }
+  showPage('exam');
+
+  // Fetch quiz metadata + questions
+  const [qRes, qsRes] = await Promise.all([
+    authFetch(`/quiz/${quizId}`),
+    authFetch(`/quiz/${quizId}/questions`)
+  ]);
+  const quiz = await qRes.json();
+  const questions = await qsRes.json();
+
+  examState = {
+    quizId,
+    quizTitle: quiz.title,
+    questions,
+    answers: {},
+    currentIndex: 0,
+    totalSeconds: quiz.timeLimitMinutes * 60,
+    remainingSeconds: quiz.timeLimitMinutes * 60,
+    timerInterval: null,
+    startTime: Date.now()
+  };
+
+  document.getElementById('exam-title').textContent = quiz.title;
+  renderQuestionNav();
+  renderQuestion(0);
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(examState.timerInterval);
+  examState.timerInterval = setInterval(() => {
+    examState.remainingSeconds--;
+    updateTimerDisplay();
+    if (examState.remainingSeconds <= 0) {
+      clearInterval(examState.timerInterval);
+      submitQuiz();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const s = examState.remainingSeconds;
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  el.classList.toggle('warning', s <= 60);
+}
+
+function renderQuestionNav() {
+  const nav = document.getElementById('question-nav');
+  nav.innerHTML = examState.questions.map((q, i) => {
+    let cls = 'q-nav-btn';
+    if (i === examState.currentIndex) cls += ' current';
+    else if (examState.answers[q.id] !== undefined) cls += ' answered';
+    return `<button class="${cls}" onclick="renderQuestion(${i})">${i+1}</button>`;
+  }).join('');
+}
+
+function renderQuestion(index) {
+  examState.currentIndex = index;
+  const q = examState.questions[index];
+  const answered = examState.answers[q.id];
+  const total = examState.questions.length;
+
+  document.getElementById('exam-progress-text').textContent = `Question ${index+1} of ${total}`;
+  const pct = (Object.keys(examState.answers).length / total) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  const opts = [
+    { key:'A', text: q.optionA },
+    { key:'B', text: q.optionB },
+    { key:'C', text: q.optionC },
+    { key:'D', text: q.optionD }
+  ];
+
+  document.getElementById('question-area').innerHTML = `
+    <div class="question-block">
+      <div class="q-number">Question ${index+1}</div>
+      <div class="q-text">${q.questionText}</div>
+      <div class="options">
+        ${opts.map(o => `
+          <div class="option-btn ${answered === o.key ? 'selected' : ''}" onclick="selectOption(${q.id}, '${o.key}', ${index})">
+            <div class="option-label">${o.key}</div>
+            <div class="option-text">${o.text}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  renderQuestionNav();
+}
+
+function selectOption(questionId, option, index) {
+  examState.answers[questionId] = option;
+  renderQuestion(index);
+}
+
+function navQuestion(dir) {
+  const newIdx = examState.currentIndex + dir;
+  if (newIdx >= 0 && newIdx < examState.questions.length) renderQuestion(newIdx);
+}
+
+function confirmSubmit() {
+  const answered = Object.keys(examState.answers).length;
+  const total = examState.questions.length;
+  const unanswered = total - answered;
+  const msg = unanswered > 0
+    ? `You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}. Submit anyway?`
+    : `All ${total} questions answered. Ready to submit?`;
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function submitQuiz() {
+  closeModal();
+  clearInterval(examState.timerInterval);
+  const timeTaken = Math.floor((Date.now() - examState.startTime) / 1000);
+
+  const answers = {};
+  for (const [qId, opt] of Object.entries(examState.answers)) {
+    answers[qId] = opt;
+  }
+
+  try {
+    const res = await authFetch(`/quiz/${examState.quizId}/submit`, 'POST', {
+      answers, timeTakenSeconds: timeTaken
+    });
+    const result = await res.json();
+    renderResult(result);
+    showPage('result');
+  } catch(e) {
+    alert('Submission failed. Please try again.');
+  }
+}
+
+// ── RESULT ───────────────────────────────────────────────────────────────
+
+function renderResult(r) {
+  const gradeClass = r.grade.startsWith('A') ? 'grade-A' : r.grade.startsWith('B') ? 'grade-B' : r.grade === 'F' ? 'grade-F' : 'grade-C';
+  const mins = Math.floor(r.timeTakenSeconds / 60);
+  const secs = r.timeTakenSeconds % 60;
+  const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  const breakdown = r.breakdown.map(item => {
+    const isCorrect = item.isCorrect;
+    const isSkipped = !item.selected || item.selected === 'Not answered';
+    const cls = isSkipped ? 'skipped' : isCorrect ? 'correct' : 'wrong';
+    const opts = {A: item.optionA, B: item.optionB, C: item.optionC, D: item.optionD};
+
+    return `
+      <div class="breakdown-item ${cls}">
+        <div class="bi-q">${item.questionText}</div>
+        <div class="bi-answers">
+          <span class="ans-tag ans-correct">✓ ${item.correct}: ${opts[item.correct] || ''}</span>
+          ${!isSkipped && !isCorrect ? `<span class="ans-tag ans-selected">✗ ${item.selected}: ${opts[item.selected] || ''}</span>` : ''}
+          ${isSkipped ? `<span class="ans-tag" style="background:rgba(112,112,160,0.15);color:var(--muted)">Skipped</span>` : ''}
+          ${isCorrect ? `<span class="ans-tag" style="background:rgba(67,233,123,0.1);color:var(--accent3)">Correct!</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('result-content').innerHTML = `
+    <div class="result-hero">
+      <div class="grade-badge ${gradeClass}">${r.grade}</div>
+      <div class="result-score">${r.score} / ${r.totalQuestions}</div>
+      <div class="result-label">${r.quizTitle}</div>
+      <div class="stat-row">
+        <div class="stat-item"><div class="stat-value">${r.percentage}%</div><div class="stat-name">Accuracy</div></div>
+        <div class="stat-item"><div class="stat-value">${timeStr}</div><div class="stat-name">Time Taken</div></div>
+        <div class="stat-item"><div class="stat-value">${r.grade}</div><div class="stat-name">Grade</div></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem">Answer Breakdown</div>
+      <button class="btn-nav" onclick="showPage('dashboard');loadQuizzes()">← Back to Quizzes</button>
+    </div>
+    <div class="breakdown-list">${breakdown}</div>
+  `;
+}
+
+// ── LEADERBOARD ──────────────────────────────────────────────────────────
+
+async function loadLeaderboard() {
+  const el = document.getElementById('leaderboard-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading...</div>';
+  try {
+    const res = await authFetch('/quiz/leaderboard');
+    const data = await res.json();
+    if (!data.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><p>No attempts yet. Be the first!</p></div>'; return; }
+    el.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <table class="lb-table">
+          <thead><tr>
+            <th>Rank</th><th>User</th><th>Quiz</th><th>Score</th><th>Accuracy</th><th>Time</th>
+          </tr></thead>
+          <tbody>
+            ${data.map(e => {
+              const rankCls = e.rank <= 3 ? `rank-${e.rank}` : 'rank-other';
+              const mins = Math.floor(e.timeTakenSeconds/60), secs = e.timeTakenSeconds%60;
+              const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+              return `<tr>
+                <td><span class="rank-badge ${rankCls}">${e.rank}</span></td>
+                <td><strong>@${e.username}</strong></td>
+                <td style="color:var(--muted);font-size:0.85rem">${e.quizTitle}</td>
+                <td style="font-family:'DM Mono',monospace">${e.score}/${e.totalQuestions}</td>
+                <td>
+                  <div class="pct-bar">
+                    <div class="pct-fill" style="width:${e.percentage}px;max-width:80px"></div>
+                    <span style="font-family:'DM Mono',monospace;font-size:0.85rem">${e.percentage}%</span>
+                  </div>
+                </td>
+                <td style="font-family:'DM Mono',monospace;color:var(--muted);font-size:0.85rem">${timeStr}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load leaderboard.</p></div>';
+  }
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────────
+
+async function loadHistory() {
+  const el = document.getElementById('history-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading...</div>';
+  try {
+    const res = await authFetch('/quiz/history');
+    const data = await res.json();
+    if (!data.length) { el.innerHTML = '<div class="empty-state"><div class="icon">📜</div><p>No attempts yet. Take a quiz!</p></div>'; return; }
+    el.innerHTML = '<div class="history-grid">' + data.map(a => {
+      const grade = getGrade(a.percentage);
+      const gradeClass = grade.startsWith('A') ? 'grade-A' : grade.startsWith('B') ? 'grade-B' : grade === 'F' ? 'grade-F' : 'grade-C';
+      const date = new Date(a.attemptedAt).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+      const mins = Math.floor(a.timeTakenSeconds/60), secs = a.timeTakenSeconds%60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      return `
+        <div class="history-card">
+          <div class="h-score-badge ${gradeClass}">${grade}</div>
+          <div class="h-info">
+            <div class="h-title">${a.quiz.title}</div>
+            <div class="h-meta">${date} &nbsp;·&nbsp; ${a.score}/${a.totalQuestions} correct &nbsp;·&nbsp; ⏱ ${timeStr}</div>
+          </div>
+          <div class="h-pct" style="color:${a.percentage >= 70 ? 'var(--accent3)' : a.percentage >= 50 ? 'var(--accent)' : 'var(--accent2)'}">${a.percentage}%</div>
+        </div>
+      `;
+    }).join('') + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load history.</p></div>';
+  }
+}
+
+function getGrade(pct) {
+  if (pct >= 90) return 'A+';
+  if (pct >= 80) return 'A';
+  if (pct >= 70) return 'B';
+  if (pct >= 60) return 'C';
+  if (pct >= 50) return 'D';
+  return 'F';
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────
+
+function authFetch(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(API + path, opts);
+}
+</script>
+</body>
+</html>
